@@ -7,6 +7,7 @@ module Fluent
       require 'fluent/plugin/exec_util'
       require 'fluent/timezone'
       require 'parse-cron'
+      require 'erb'
     end
 
     SUPPORTED_FORMAT = {
@@ -76,6 +77,7 @@ module Fluent
       rescue => e
         raise ConfigError, "invalid cron expression. [#{@cron}]"
       end
+      @command = ERB.new(@command.gsub(/\$\{([^}]+)\}/, '<%= \1 %>'))
     end
 
     def start
@@ -97,7 +99,7 @@ module Fluent
         begin
           secs = @cron_parser.next(Time.now) - Time.now
           sleep secs
-          io = IO.popen(@command, "r")
+          io = IO.popen(@command.result(binding), "r")
           @parser.call(io)
           Process.waitpid(io.pid)
         rescue

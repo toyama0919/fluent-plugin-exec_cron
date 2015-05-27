@@ -40,6 +40,18 @@ class ExecCronInputTest < Test::Unit::TestCase
     end
   end
 
+  def test_configure_placeholder
+    d = create_driver %q{
+      type exec_cron
+      tag exec_cron.example
+      command echo '{"a":"${(Date.new(2015, 1, 1) - 1).strftime('%Y/%m/%d')}"}'
+      format json
+      cron * * * * *
+      graceful_shutdown false
+    }
+    assert_equal %Q{echo '{"a":"2014/12/31"}'}, d.instance.command.result(binding)
+  end
+
   def test_emit
     d = create_driver %q{
       tag exec_cron.example
@@ -59,4 +71,5 @@ class ExecCronInputTest < Test::Unit::TestCase
     assert_equal true, emits.length > 0
     assert_equal ["exec_cron.example", Time.parse("2011-01-02 13:14:15").to_i, {"a"=>"a"}], emits[0]
   end
+
 end
