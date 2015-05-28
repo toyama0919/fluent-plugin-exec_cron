@@ -124,7 +124,7 @@ module Fluent
         time = Engine.now
       end
 
-      router.emit(tag, time, record)
+      Fluent::Engine.emit(tag, time, record)
     rescue => e
       log.error "exec failed to emit", :error => e.to_s, :error_class => e.class.to_s, :tag => tag, :record => Yajl.dump(record)
     end
