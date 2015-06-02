@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-exec_cron"
-  gem.version       = "0.0.1"
+  gem.version       = "0.0.2"
   gem.summary       = %q{executes external programs with cron syntax.}
   gem.description   = %q{executes external programs with cron syntax.}
   gem.license       = "MIT"
