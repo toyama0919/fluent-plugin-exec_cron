@@ -34,7 +34,7 @@ module Fluent
     config_param :time_key, :string, :default => nil
     config_param :time_format, :string, :default => nil
     config_param :run_interval, :time, :default => nil
-    config_param :graceful_shutdown, :bool, :default => true
+    config_param :graceful_shutdown, :bool, :default => false
     config_param :cron, :string
 
     def configure(conf)
