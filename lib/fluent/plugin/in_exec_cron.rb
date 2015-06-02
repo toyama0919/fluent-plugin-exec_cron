@@ -16,6 +16,10 @@ module Fluent
       'msgpack' => :msgpack,
     }
 
+    unless method_defined?(:router)
+      define_method("router") { Fluent::Engine }
+    end
+
     config_param :command, :string
     config_param :format, :default => :tsv do |val|
       f = SUPPORTED_FORMAT[val]
@@ -124,7 +128,7 @@ module Fluent
         time = Engine.now
       end
 
-      Fluent::Engine.emit(tag, time, record)
+      router.emit(tag, time, record)
     rescue => e
       log.error "exec failed to emit", :error => e.to_s, :error_class => e.class.to_s, :tag => tag, :record => Yajl.dump(record)
     end
