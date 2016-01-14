@@ -10,22 +10,12 @@ module Fluent
       require 'erb'
     end
 
-    SUPPORTED_FORMAT = {
-      'tsv' => :tsv,
-      'json' => :json,
-      'msgpack' => :msgpack,
-    }
-
     unless method_defined?(:router)
       define_method("router") { Fluent::Engine }
     end
 
     config_param :command, :string
-    config_param :format, :default => :tsv do |val|
-      f = SUPPORTED_FORMAT[val]
-      raise ConfigError, "Unsupported format '#{val}'" unless f
-      f
-    end
+		config_param :format, :string, :default => 'tsv'
     config_param :keys, :default => [] do |val|
       val.split(',')
     end
@@ -64,17 +54,7 @@ module Fluent
         end
       end
 
-      case @format
-      when :tsv
-        if @keys.empty?
-          raise ConfigError, "keys option is required on exec input for tsv format"
-        end
-        @parser = ExecUtil::TSVParser.new(@keys, method(:on_message))
-      when :json
-        @parser = ExecUtil::JSONParser.new(method(:on_message))
-      when :msgpack
-        @parser = ExecUtil::MessagePackParser.new(method(:on_message))
-      end
+			@parser = setup_parser(conf)
 
       begin
         @cron_parser = CronParser.new(@cron)
@@ -82,6 +62,22 @@ module Fluent
         raise ConfigError, "invalid cron expression. [#{@cron}]"
       end
       @command = ERB.new(@command.gsub(/\$\{([^}]+)\}/, '<%= \1 %>'))
+    end
+
+    def setup_parser(conf)
+      case @format
+      when 'tsv'
+        if @keys.empty?
+          raise ConfigError, "keys option is required on exec input for tsv format"
+        end
+        ExecUtil::TSVParser.new(@keys, method(:on_message))
+      when 'json'
+        ExecUtil::JSONParser.new(method(:on_message))
+      when 'msgpack'
+        ExecUtil::MessagePackParser.new(method(:on_message))
+      else
+        ExecUtil::TextParserWrapperParser.new(conf, method(:on_message))
+      end
     end
 
     def start
@@ -115,19 +111,23 @@ module Fluent
 
     private
 
-    def on_message(record)
+    def on_message(record, parsed_time = nil)
       if val = record.delete(@tag_key)
         tag = val
       else
         tag = @tag
       end
-
-      if val = record.delete(@time_key)
-        time = @time_parse_proc.call(val)
+  
+      if parsed_time
+        time = parsed_time
       else
-        time = Engine.now
+        if val = record.delete(@time_key)
+          time = @time_parse_proc.call(val)
+        else
+          time = Engine.now
+        end
       end
-
+  
       router.emit(tag, time, record)
     rescue => e
       log.error "exec failed to emit", :error => e.to_s, :error_class => e.class.to_s, :tag => tag, :record => Yajl.dump(record)
