@@ -6,10 +6,6 @@ rvm:
   - 2.1.*
   - 2.2.*
 
-os:
-  - linux
-  - osx
-
 gemfile:
   - Gemfile
 
